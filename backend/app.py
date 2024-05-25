@@ -8,15 +8,15 @@ import logging
 
 app = Flask(__name__)
 
-# configure logging
+# Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
-# load inference model and feature extractor
+# Load inference model and feature extractor
 model_name = "nateraw/food"
 feature_extractor = ViTFeatureExtractor.from_pretrained(model_name)
 inference_model = ViTForImageClassification.from_pretrained(model_name)
 
-# load similarity model
+# Load similarity model
 similarity_model = SentenceTransformer('all-mpnet-base-v2')
 
 def transform_image(image_bytes):
@@ -59,7 +59,7 @@ def upload_file():
             predictions = get_predictions(img_bytes)
             best_food = predictions[0]  # best predicted
             similarity_score = similarity(best_food[0], description)
-            return jsonify({'predictions': predictions, 'similarity_score': similarity_score})
+            return jsonify({'predictions': [best_food], 'similarity_score': similarity_score})
     except Exception as e:
         app.logger.error(f'An error occurred: {e}')
         return jsonify({'error': str(e)}), 500
