@@ -1,12 +1,13 @@
 from flask import Flask, request, render_template, url_for
 import requests
+import io
 import os
+from PIL import Image
+import base64
 
 app = Flask(__name__)
 
-UPLOAD_FOLDER = 'static/uploads'
 PRE_UPLOADED_FOLDER = 'static/pre_uploaded_images'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['PRE_UPLOADED_FOLDER'] = PRE_UPLOADED_FOLDER
 
 # In-memory storage for products
@@ -23,24 +24,18 @@ def upload_file():
         
         if file and file.filename != '':
             try:
-                # Ensure the upload folder exists
-                if not os.path.exists(app.config['UPLOAD_FOLDER']):
-                    os.makedirs(app.config['UPLOAD_FOLDER'])
+                # Process the uploaded file in memory
+                image = Image.open(file.stream)
+                img_byte_arr = io.BytesIO()
+                image.save(img_byte_arr, format=image.format)
+                img_byte_arr = img_byte_arr.getvalue()
 
-                # Save the file to the static folder
-                filename = file.filename
-                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                file.save(file_path)
-
-                # Now that the file is saved, open it for the POST request
-                with open(file_path, 'rb') as img_file:
-                    response = requests.post('http://127.0.0.1:5000/predict', files={'file': img_file}, data={'description': title})
-
+                response = requests.post('http://127.0.0.1:5000/predict', files={'file': (file.filename, img_byte_arr, file.content_type)}, data={'description': title})
                 response.raise_for_status()  # Raise an error for bad status codes
                 data = response.json()
 
-                # Pass the URL of the uploaded image
-                uploaded_image_url = url_for('static', filename='uploads/' + filename)
+                # Pass the URL of the uploaded image (use a data URL for in-memory image)
+                uploaded_image_url = f"data:{file.content_type};base64,{base64.b64encode(img_byte_arr).decode('utf-8')}"
                 product = {
                     'title': title,
                     'image_url': uploaded_image_url,
