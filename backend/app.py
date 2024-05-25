@@ -1,11 +1,15 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify
 from transformers import ViTFeatureExtractor, ViTForImageClassification
 from sentence_transformers import SentenceTransformer, util
 from PIL import Image
 import torch
 import io
+import logging
 
 app = Flask(__name__)
+
+# configure logging
+logging.basicConfig(level=logging.DEBUG)
 
 # load inference model and feature extractor
 model_name = "nateraw/food"
@@ -16,46 +20,70 @@ inference_model = ViTForImageClassification.from_pretrained(model_name)
 similarity_model = SentenceTransformer('all-mpnet-base-v2')
 
 def transform_image(image_bytes):
-    image = Image.open(io.BytesIO(image_bytes))
-    return feature_extractor(images=image, return_tensors="pt")
+    try:
+        image = Image.open(io.BytesIO(image_bytes))
+        app.logger.debug(f'Image mode: {image.mode}')
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+        return feature_extractor(images=image, return_tensors="pt")
+    except Exception as e:
+        app.logger.error(f'Error processing image: {e}')
+        raise
 
 def get_predictions(image_bytes, top_k=5):
-    inputs = transform_image(image_bytes)
-    outputs = inference_model(**inputs)
-    logits = outputs.logits
-    probs = torch.nn.functional.softmax(logits, dim=-1)
-    top_probs, top_labels = torch.topk(probs, top_k)
-    top_probs = top_probs.squeeze().tolist()
-    top_labels = top_labels.squeeze().tolist()
-    return [(inference_model.config.id2label[label], prob) for label, prob in zip(top_labels, top_probs)]
+    try:
+        inputs = transform_image(image_bytes)
+        outputs = inference_model(**inputs)
+        logits = outputs.logits
+        probs = torch.nn.functional.softmax(logits, dim=-1)
+        top_probs, top_labels = torch.topk(probs, top_k)
+        top_probs = top_probs.squeeze().tolist()
+        top_labels = top_labels.squeeze().tolist()
+        return [(inference_model.config.id2label[label], prob) for label, prob in zip(top_labels, top_probs)]
+    except Exception as e:
+        app.logger.error(f'Error getting predictions: {e}')
+        raise
 
 @app.route('/predict', methods=['POST'])
 def upload_file():
-    
-    image, description = request.files['file']
-    
-    if image:
-        img_bytes = image.read()
-        predictions = get_predictions(img_bytes)
-        best_food = predictions[0] #best predicted
-        return similarity(best_food.0, description)
+    try:
+        if 'file' not in request.files or 'description' not in request.form:
+            app.logger.error('No file or description part in the request')
+            return jsonify({'error': 'No file or description part'}), 400
+
+        image = request.files['file']
+        description = request.form['description']
+
+        if image:
+            img_bytes = image.read()
+            predictions = get_predictions(img_bytes)
+            best_food = predictions[0]  # best predicted
+            similarity_score = similarity(best_food[0], description)
+            return jsonify({'predictions': predictions, 'similarity_score': similarity_score})
+    except Exception as e:
+        app.logger.error(f'An error occurred: {e}')
+        return jsonify({'error': str(e)}), 500
 
 def similarity(best_food_name, description):
-    # 2 strings to compare
-    string1 = best_food_name
-    string2 = description
+    try:
+        # 2 strings to compare
+        string1 = best_food_name
+        string2 = description
 
-    if not string1 or not string2:
-        return jsonify({'error': 'Both string1 and string2 are required'}), 400
+        if not string1 or not string2:
+            return jsonify({'error': 'Both string1 and string2 are required'}), 400
 
-    # calculate the embeddings
-    embedding1 = similarity_model.encode(string1, convert_to_tensor=True)
-    embedding2 = similarity_model.encode(string2, convert_to_tensor=True)
+        # calculate the embeddings
+        embedding1 = similarity_model.encode(string1, convert_to_tensor=True)
+        embedding2 = similarity_model.encode(string2, convert_to_tensor=True)
 
-    # calculate the cosinus similarity
-    cosine_score = util.pytorch_cos_sim(embedding1, embedding2)
+        # calculate the cosine similarity
+        cosine_score = util.pytorch_cos_sim(embedding1, embedding2)
 
-    return cosine_score.item()
+        return cosine_score.item()
+    except Exception as e:
+        app.logger.error('An error occurred in similarity calculation: %s', str(e))
+        raise
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
