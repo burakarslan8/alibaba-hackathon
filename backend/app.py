@@ -72,6 +72,9 @@ def similarity(best_food_name, description):
 
         if not string1 or not string2:
             return jsonify({'error': 'Both string1 and string2 are required'}), 400
+        
+        if "_" in string1:
+            string1 = string1.replace("_", " ")
 
         # calculate the embeddings
         embedding1 = similarity_model.encode(string1, convert_to_tensor=True)

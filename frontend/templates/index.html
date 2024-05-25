@@ -7,7 +7,7 @@
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
-      background-color: #f8f9fa;
+      background-color: #cfcfcf;
     }
     .container {
       margin-top: 50px;
@@ -43,6 +43,12 @@
     }
     .badge {
       font-size: 1rem;
+    }
+    .badge-green {
+      background-color: #0fc73a;
+    }
+    .badge-red {
+      background-color: #dc3545;
     }
     .btn-primary {
       background-color: #007bff;
@@ -107,8 +113,13 @@
           <img src="{{ product['image_url'] }}" class="card-img-top product-img" alt="Product Image">
           <div class="card-body">
             <h5 class="card-title">{{ product['title'] }}</h5>
-            <p class="card-text">{{ product['best_food'][0] }} <span class="badge badge-primary badge-pill">{{ "%.2f"|format(product['best_food'][1] * 100) }}%</span></p>
-            <p class="card-text">Similarity: {{ "%.2f"|format(product['similarity_score'] * 100) }}%</p>
+            <p class="card-text">
+              <span class="badge 
+                {% if product['similarity_score'] * 100 > 65 %}badge-green
+                {% else %}badge-red
+                {% endif %}
+              ">{{ "%.2f"|format(product['similarity_score'] * 100) }}%</span>
+            </p>
           </div>
         </div>
         {% endfor %}
