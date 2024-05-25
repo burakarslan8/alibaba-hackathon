@@ -1,15 +1,19 @@
 from flask import Flask, request, jsonify, render_template
 from transformers import ViTFeatureExtractor, ViTForImageClassification
+from sentence_transformers import SentenceTransformer, util
 from PIL import Image
 import torch
 import io
 
 app = Flask(__name__)
 
-# Load model and feature extractor
+# load inference model and feature extractor
 model_name = "nateraw/food"
 feature_extractor = ViTFeatureExtractor.from_pretrained(model_name)
-model = ViTForImageClassification.from_pretrained(model_name)
+inference_model = ViTForImageClassification.from_pretrained(model_name)
+
+# load similarity model
+similarity_model = SentenceTransformer('all-mpnet-base-v2')
 
 def transform_image(image_bytes):
     image = Image.open(io.BytesIO(image_bytes))
@@ -17,13 +21,13 @@ def transform_image(image_bytes):
 
 def get_predictions(image_bytes, top_k=5):
     inputs = transform_image(image_bytes)
-    outputs = model(**inputs)
+    outputs = inference_model(**inputs)
     logits = outputs.logits
     probs = torch.nn.functional.softmax(logits, dim=-1)
     top_probs, top_labels = torch.topk(probs, top_k)
     top_probs = top_probs.squeeze().tolist()
     top_labels = top_labels.squeeze().tolist()
-    return [(model.config.id2label[label], prob) for label, prob in zip(top_labels, top_probs)]
+    return [(inference_model.config.id2label[label], prob) for label, prob in zip(top_labels, top_probs)]
 
 @app.route('/predict', methods=['POST'])
 def upload_file():
@@ -33,6 +37,25 @@ def upload_file():
         img_bytes = file.read()
         predictions = get_predictions(img_bytes)
         return jsonify(predictions)
+
+@app.route('/similarity', methods=['POST'])
+def similarity():
+    # 2 strings to compare
+    data = request.get_json()
+    string1 = data.get('string1')
+    string2 = data.get('string2')
+
+    if not string1 or not string2:
+        return jsonify({'error': 'Both string1 and string2 are required'}), 400
+
+    # calculate the embeddings
+    embedding1 = similarity_model.encode(string1, convert_to_tensor=True)
+    embedding2 = similarity_model.encode(string2, convert_to_tensor=True)
+
+    # calculate the cosinus similarity
+    cosine_score = util.pytorch_cos_sim(embedding1, embedding2)
+
+    return jsonify({'similarity': cosine_score.item()})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
