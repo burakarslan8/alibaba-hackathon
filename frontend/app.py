@@ -11,11 +11,12 @@ def upload_file():
         if 'file' not in request.files:
             return 'No file part'
         file = request.files['file']
+        print(file)
         if file.filename == '':
             return 'No selected file'
         if file:
             img_bytes = file.read()
-            predictions = requests.post('http://127.0.0.1:5001/predict', files={'file': img_bytes})
+            predictions = requests.post('http://127.0.0.1:5001/predict', files={'file': (img_bytes, description)})
             predictions = predictions.json()
             return render_template('index.html', predictions=predictions)
     return render_template('index.html')

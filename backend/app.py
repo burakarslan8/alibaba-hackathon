@@ -32,18 +32,18 @@ def get_predictions(image_bytes, top_k=5):
 @app.route('/predict', methods=['POST'])
 def upload_file():
     
-    file = request.files['file']
-    if file:
-        img_bytes = file.read()
+    image, description = request.files['file']
+    
+    if image:
+        img_bytes = image.read()
         predictions = get_predictions(img_bytes)
-        return jsonify(predictions)
+        best_food = predictions[0] #best predicted
+        return similarity(best_food.0, description)
 
-@app.route('/similarity', methods=['POST'])
-def similarity():
+def similarity(best_food_name, description):
     # 2 strings to compare
-    data = request.get_json()
-    string1 = data.get('string1')
-    string2 = data.get('string2')
+    string1 = best_food_name
+    string2 = description
 
     if not string1 or not string2:
         return jsonify({'error': 'Both string1 and string2 are required'}), 400
@@ -55,7 +55,7 @@ def similarity():
     # calculate the cosinus similarity
     cosine_score = util.pytorch_cos_sim(embedding1, embedding2)
 
-    return jsonify({'similarity': cosine_score.item()})
+    return cosine_score.item()
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
