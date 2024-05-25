@@ -19,6 +19,27 @@ inference_model = ViTForImageClassification.from_pretrained(model_name)
 # load similarity model
 similarity_model = SentenceTransformer('all-mpnet-base-v2')
 
+# Handlers ---------------------------------------------------------------------
+@app.route('/predict', methods=['POST'])
+def upload_file():
+    try:
+        if 'file' not in request.files or 'description' not in request.form:
+            app.logger.error('No file or description part in the request')
+            return jsonify({'error': 'No file or description part'}), 400
+
+        image = request.files['file']
+        description = request.form['description']
+
+        if image:
+            img_bytes = image.read()
+            predictions = get_predictions(img_bytes)
+            best_food = predictions[0]  # best predicted
+            similarity_score = similarity(best_food[0], description)
+            return jsonify({'predictions': [best_food], 'similarity_score': similarity_score})
+    except Exception as e:
+        app.logger.error(f'An error occurred: {e}')
+        return jsonify({'error': str(e)}), 500
+#--------------------------------------------------------------------------------
 def transform_image(image_bytes):
     try:
         image = Image.open(io.BytesIO(image_bytes))
@@ -43,26 +64,6 @@ def get_predictions(image_bytes, top_k=5):
     except Exception as e:
         app.logger.error(f'Error getting predictions: {e}')
         raise
-
-@app.route('/predict', methods=['POST'])
-def upload_file():
-    try:
-        if 'file' not in request.files or 'description' not in request.form:
-            app.logger.error('No file or description part in the request')
-            return jsonify({'error': 'No file or description part'}), 400
-
-        image = request.files['file']
-        description = request.form['description']
-
-        if image:
-            img_bytes = image.read()
-            predictions = get_predictions(img_bytes)
-            best_food = predictions[0]  # best predicted
-            similarity_score = similarity(best_food[0], description)
-            return jsonify({'predictions': [best_food], 'similarity_score': similarity_score})
-    except Exception as e:
-        app.logger.error(f'An error occurred: {e}')
-        return jsonify({'error': str(e)}), 500
 
 def similarity(best_food_name, description):
     try:
