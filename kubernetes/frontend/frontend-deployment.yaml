@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend-deployment
+  name: frontend-deployment
   labels:
-    app: backend
+    app: frontend
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: backend
+      app: frontend
   template:
     metadata:
       labels:
-        app: backend
+        app: frontend
     spec:
       containers:
-      - name: backend-deployment
-        image: burakarslan8/hackathon-backend:latest
+      - name: frontend
+        image: burakarslan8/hackathon-frontend:latest
         ports:
-        - containerPort: 5000
+        - containerPort: 3000
         env:
         - name: FLASK_ENV
-          value: production
+          value: "production"

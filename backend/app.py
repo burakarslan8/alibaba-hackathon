@@ -8,15 +8,15 @@ import logging
 
 app = Flask(__name__)
 
-# Configure logging
+# configure logging
 logging.basicConfig(level=logging.DEBUG)
 
-# Load inference model and feature extractor
+# load inference model and feature extractor
 model_name = "nateraw/food"
 feature_extractor = ViTFeatureExtractor.from_pretrained(model_name)
 inference_model = ViTForImageClassification.from_pretrained(model_name)
 
-# Load similarity model
+# load similarity model
 similarity_model = SentenceTransformer('all-mpnet-base-v2')
 
 def transform_image(image_bytes):
