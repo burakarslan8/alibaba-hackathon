@@ -19,6 +19,20 @@
       font-size: 1.25rem;
       font-weight: bold;
     }
+    .preview-img {
+      max-width: 100%;
+      height: auto;
+      margin-top: 15px;
+    }
+    .pre-uploaded-images img {
+      cursor: pointer;
+      max-width: 100px;
+      margin: 5px;
+      border: 2px solid transparent;
+    }
+    .pre-uploaded-images img.selected {
+      border-color: #007bff;
+    }
     .list-group-item {
       display: flex;
       justify-content: space-between;
@@ -35,11 +49,6 @@
       background-color: #0056b3;
       border-color: #0056b3;
     }
-    .preview-img {
-      max-width: 100%;
-      height: auto;
-      margin-top: 15px;
-    }
   </style>
 </head>
 <body>
@@ -54,6 +63,15 @@
             <label for="file">Choose product image</label>
             <input type="file" class="form-control-file" id="file" name="file" onchange="previewFile()">
           </div>
+          <div class="form-group">
+            <label for="pre_uploaded">Or select a pre-uploaded image</label>
+            <div class="pre-uploaded-images">
+              {% for image in pre_uploaded_images %}
+              <img src="{{ url_for('static', filename='pre_uploaded_images/' ~ image) }}" onclick="selectPreUploadedImage(this, '{{ image }}')">
+              {% endfor %}
+            </div>
+          </div>
+          <input type="hidden" id="pre_uploaded" name="pre_uploaded">
           <div class="form-group">
             <label for="title">Product Title</label>
             <input type="text" class="form-control" id="title" name="title" placeholder="Enter product title">
@@ -92,11 +110,29 @@
       reader.addEventListener('load', function () {
         preview.src = reader.result;
         preview.style.display = 'block';
+        document.getElementById('pre_uploaded').value = '';
+        clearPreUploadedSelection();
       }, false);
 
       if (file) {
         reader.readAsDataURL(file);
       }
+    }
+
+    function selectPreUploadedImage(imgElement, imageName) {
+      const preview = document.getElementById('preview-img');
+      preview.src = imgElement.src;
+      preview.style.display = 'block';
+      document.getElementById('file').value = '';
+      document.getElementById('pre_uploaded').value = imageName;
+
+      clearPreUploadedSelection();
+      imgElement.classList.add('selected');
+    }
+
+    function clearPreUploadedSelection() {
+      const preUploadedImages = document.querySelectorAll('.pre-uploaded-images img');
+      preUploadedImages.forEach(img => img.classList.remove('selected'));
     }
   </script>
 </body>
