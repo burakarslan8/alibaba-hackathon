@@ -9,8 +9,13 @@ PRE_UPLOADED_FOLDER = 'static/pre_uploaded_images'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['PRE_UPLOADED_FOLDER'] = PRE_UPLOADED_FOLDER
 
+# In-memory storage for products
+products = []
+
 @app.route('/', methods=['GET', 'POST'])
 def upload_file():
+    pre_uploaded_images = os.listdir(app.config['PRE_UPLOADED_FOLDER'])
+    
     if request.method == 'POST':
         title = request.form['title']
         file = request.files.get('file')
@@ -36,7 +41,14 @@ def upload_file():
 
                 # Pass the URL of the uploaded image
                 uploaded_image_url = url_for('static', filename='uploads/' + filename)
-                return render_template('index.html', best_food=data['predictions'][0], similarity_score=data['similarity_score'], uploaded_image_url=uploaded_image_url, title=title)
+                product = {
+                    'title': title,
+                    'image_url': uploaded_image_url,
+                    'best_food': data['predictions'][0],
+                    'similarity_score': data['similarity_score']
+                }
+                products.append(product)
+                return render_template('index.html', pre_uploaded_images=pre_uploaded_images, products=products)
             except requests.exceptions.RequestException as e:
                 return f'An error occurred: {e}'
             except ValueError:
@@ -52,15 +64,21 @@ def upload_file():
 
                 # Pass the URL of the pre-uploaded image
                 uploaded_image_url = url_for('static', filename='pre_uploaded_images/' + pre_uploaded)
-                return render_template('index.html', best_food=data['predictions'][0], similarity_score=data['similarity_score'], uploaded_image_url=uploaded_image_url, title=title)
+                product = {
+                    'title': title,
+                    'image_url': uploaded_image_url,
+                    'best_food': data['predictions'][0],
+                    'similarity_score': data['similarity_score']
+                }
+                products.append(product)
+                return render_template('index.html', pre_uploaded_images=pre_uploaded_images, products=products)
             except requests.exceptions.RequestException as e:
                 return f'An error occurred: {e}'
             except ValueError:
                 return f'Error decoding JSON response: {response.content}'
     
     # List pre-uploaded images
-    pre_uploaded_images = os.listdir(app.config['PRE_UPLOADED_FOLDER'])
-    return render_template('index.html', pre_uploaded_images=pre_uploaded_images)
+    return render_template('index.html', pre_uploaded_images=pre_uploaded_images, products=products)
 
 if __name__ == '__main__':
     app.run(debug=True, port=3000)

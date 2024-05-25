@@ -26,9 +26,11 @@
     }
     .pre-uploaded-images img {
       cursor: pointer;
-      max-width: 100px;
+      width: 100px;
+      height: 100px;
       margin: 5px;
       border: 2px solid transparent;
+      object-fit: cover;
     }
     .pre-uploaded-images img.selected {
       border-color: #007bff;
@@ -49,6 +51,20 @@
       background-color: #0056b3;
       border-color: #0056b3;
     }
+    .product-card {
+      width: 200px;
+      margin: 10px;
+    }
+    .product-img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+    }
+    .products-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+    }
   </style>
 </head>
 <body>
@@ -61,7 +77,7 @@
         <form method="post" enctype="multipart/form-data">
           <div class="form-group">
             <label for="file">Choose product image</label>
-            <input type="file" class="form-control-file" id="file" name="file" onchange="previewFile()">
+            <input type="file" class="form-control-file" id="file" name="file">
           </div>
           <div class="form-group">
             <label for="pre_uploaded">Or select a pre-uploaded image</label>
@@ -78,51 +94,31 @@
           </div>
           <button type="submit" class="btn btn-primary">Create Listing</button>
         </form>
-        <img id="preview-img" class="preview-img" src="#" alt="Image preview" style="display: none;"/>
       </div>
     </div>
-    {% if best_food %}
     <div class="card">
       <div class="card-header">
-        Listing Details
+        Products
       </div>
-      <div class="card-body">
-        <h5>Uploaded Image</h5>
-        <img src="{{ uploaded_image_url }}" class="preview-img" alt="Uploaded Image">
-        <h5 class="mt-3">Product Title: {{ title }}</h5>
-        <h5 class="mt-3">Best Prediction</h5>
-        <p>{{ best_food[0] }} <span class="badge badge-primary badge-pill">{{ "%.2f"|format(best_food[1] * 100) }}%</span></p>
-        <h5 class="mt-3">Similarity Score</h5>
-        <p>{{ "%.2f"|format(similarity_score * 100) }}%</p>
+      <div class="card-body products-container">
+        {% for product in products %}
+        <div class="card product-card">
+          <img src="{{ product['image_url'] }}" class="card-img-top product-img" alt="Product Image">
+          <div class="card-body">
+            <h5 class="card-title">{{ product['title'] }}</h5>
+            <p class="card-text">{{ product['best_food'][0] }} <span class="badge badge-primary badge-pill">{{ "%.2f"|format(product['best_food'][1] * 100) }}%</span></p>
+            <p class="card-text">Similarity: {{ "%.2f"|format(product['similarity_score'] * 100) }}%</p>
+          </div>
+        </div>
+        {% endfor %}
       </div>
     </div>
-    {% endif %}
   </div>
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
   <script>
-    function previewFile() {
-      const preview = document.getElementById('preview-img');
-      const file = document.getElementById('file').files[0];
-      const reader = new FileReader();
-
-      reader.addEventListener('load', function () {
-        preview.src = reader.result;
-        preview.style.display = 'block';
-        document.getElementById('pre_uploaded').value = '';
-        clearPreUploadedSelection();
-      }, false);
-
-      if (file) {
-        reader.readAsDataURL(file);
-      }
-    }
-
     function selectPreUploadedImage(imgElement, imageName) {
-      const preview = document.getElementById('preview-img');
-      preview.src = imgElement.src;
-      preview.style.display = 'block';
       document.getElementById('file').value = '';
       document.getElementById('pre_uploaded').value = imageName;
 
