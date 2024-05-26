@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>Product Listing</title>
+  <title>Tikla Gelsin</title>
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="../static/style.css">
 </head>
@@ -11,16 +11,16 @@
   <div class="container">
     <div class="card">
       <div class="card-header">
-        Create a Product Listing
+        Ürün Ekle
       </div>
       <div class="card-body">
         <form method="post" enctype="multipart/form-data">
           <div class="form-group">
-            <label for="file">Choose product image</label>
+            <label for="file">Ürün resmi yükleyin</label>
             <input type="file" class="form-control-file" id="file" name="file">
           </div>
           <div class="form-group">
-            <label for="pre_uploaded">Or select a pre-uploaded image</label>
+            <label for="pre_uploaded">Ya da hazır resimleri kullanın</label>
             <div class="pre-uploaded-images">
               {% for image in pre_uploaded_images %}
               <img src="{{ url_for('static', filename='pre_uploaded_images/' ~ image) }}" onclick="selectPreUploadedImage(this, '{{ image }}')">
@@ -29,16 +29,16 @@
           </div>
           <input type="hidden" id="pre_uploaded" name="pre_uploaded">
           <div class="form-group">
-            <label for="title">Product Title</label>
-            <input type="text" class="form-control" id="title" name="title" placeholder="Enter product title">
+            <label for="title">Ürün Adı</label>
+            <input type="text" class="form-control" id="title" name="title" placeholder="Ürün adı girin">
           </div>
-          <button type="submit" class="btn btn-primary">Create Listing</button>
+          <button type="submit" class="btn btn-primary">Ekle</button>
         </form>
       </div>
     </div>
     <div class="card">
       <div class="card-header">
-        Products
+        Ürünler
       </div>
       <div class="card-body products-container">
         {% for product in products %}
