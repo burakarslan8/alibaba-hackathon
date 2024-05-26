@@ -76,4 +76,4 @@ def upload_file():
     return render_template('index.html', pre_uploaded_images=pre_uploaded_images, products=products)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True, port=80)
+    app.run(host='0.0.0.0', debug=True, port=3000)
